@@ -7,7 +7,7 @@ export interface DIDVideoOptions {
   audioUrl?: string; // 音声ファイルのURL
   voice?: {
     type: string;
-    input: string;es
+    input: string;
     stitch?: boolean;
     resultFormat?: 'mp4' | 'webm';
     quality?: 'draft' | 'premium' | 'hd';
