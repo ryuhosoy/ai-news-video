@@ -54,7 +54,6 @@ export default function SettingsPage() {
     
     // API Settings
     openaiApiKey: '',
-    elevenLabsApiKey: '',
     didApiKey: ''
   })
 
@@ -96,7 +95,6 @@ export default function SettingsPage() {
       pushNotifications: false,
       completionNotifications: true,
       openaiApiKey: '',
-      elevenLabsApiKey: '',
       didApiKey: ''
     })
   }
@@ -274,16 +272,7 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="elevenLabsApiKey">ElevenLabs API Key</Label>
-                    <Input
-                      id="elevenLabsApiKey"
-                      type="password"
-                      placeholder="..."
-                      value={settings.elevenLabsApiKey}
-                      onChange={(e) => handleSettingChange('elevenLabsApiKey', e.target.value)}
-                    />
-                  </div>
+
 
                   <div className="space-y-2">
                     <Label htmlFor="didApiKey">D-ID API Key</Label>
