@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,11 +23,13 @@ import {
   Share,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  Loader2
 } from 'lucide-react'
 
 export default function VideoGenerationPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState('summary')
   const [progress, setProgress] = useState(0)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -38,12 +40,48 @@ export default function VideoGenerationPage() {
     duration: 15
   })
 
+  // URLパラメータから記事テキストを受け取る
+  useEffect(() => {
+    const articleText = searchParams.get('articleText')
+    const articleTitle = searchParams.get('articleTitle')
+    
+    console.log('📄 記事テキスト受信:', {
+      hasArticleText: !!articleText,
+      textLength: articleText?.length || 0,
+      hasArticleTitle: !!articleTitle,
+      title: articleTitle
+    });
+    
+    if (articleText) {
+      setSummaryData(prev => ({
+        ...prev,
+        originalText: articleText,
+        summary: generateAISummary(articleText) // AI要約を生成
+      }))
+    }
+  }, [searchParams])
+
+  // AI要約を生成する関数
+  const generateAISummary = (text: string): string => {
+    if (!text) return ''
+    
+    // 簡易的なAI要約ロジック（実際のAI APIを使用する場合はここを変更）
+    const sentences = text.split(/[。！？]/).filter(s => s.trim().length > 0)
+    const importantSentences = sentences.slice(0, 3) // 最初の3文を重要と仮定
+    
+    return importantSentences.join('。') + '。'
+  }
+
+
+
   const [voiceSettings, setVoiceSettings] = useState({
-    voice: 'female_voice',
+    voice: 'ja-JP-NanamiNeural',
     speed: 1.0,
     pitch: 1.0,
     volume: 1.0
   })
+
+
 
   const [characterSettings, setCharacterSettings] = useState({
     character: 'avatar_1',
@@ -67,10 +105,10 @@ export default function VideoGenerationPage() {
   ]
 
   const voiceOptions = [
-    { value: 'female_voice', label: '女性の声（標準）' },
-    { value: 'male_voice', label: '男性の声（標準）' },
-    { value: 'female_news', label: '女性の声（ニュース調）' },
-    { value: 'male_news', label: '男性の声（ニュース調）' }
+    { value: 'ja-JP-NanamiNeural', label: '女性の声（Nanami）' },
+    { value: 'ja-JP-KeitaNeural', label: '男性の声（Keita）' },
+    { value: 'ja-JP-AoiNeural', label: '女性の声（Aoi）' },
+    { value: 'ja-JP-DaichiNeural', label: '男性の声（Daichi）' }
   ]
 
   const characterOptions = [
@@ -102,17 +140,229 @@ export default function VideoGenerationPage() {
   }
 
   const handleGenerate = async () => {
+    console.log('🚀 動画生成開始:', {
+      summary: summaryData.summary,
+      voiceType: voiceSettings.voice,
+      duration: summaryData.duration,
+      timestamp: new Date().toISOString()
+    });
+
     setIsGenerating(true)
     setCurrentStep('generate')
     
-    // Simulate video generation process
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setProgress(i)
+    try {
+      // Step 1: D-ID APIで動画生成 (0-80%)
+      console.log('🎬 Step 1: D-ID 動画生成開始');
+      console.log('📋 生成設定:', {
+        text: summaryData.summary,
+        presenterId: 'amy-Aq6OmG2joV',
+        voice: voiceSettings.voice,
+        quality: videoSettings.quality === 'high' ? 'hd' : 'premium',
+        resolution: videoSettings.quality === 'high' ? '1080p' : '720p'
+      });
+      setProgress(0);
+      
+      // 実際のテキストで動画生成
+      const requestBody = {
+        text: summaryData.summary,
+        options: {
+          presenterId: 'amy-Aq6OmG2joV', // テストと同じプレゼンター
+          backgroundType: 'color', // シンプルな背景
+          voice: {
+            type: 'microsoft',
+            input: voiceSettings.voice
+          },
+          config: {
+            fluent: true,
+            padAudio: 0,
+            stitch: true,
+            resultFormat: 'mp4',
+            quality: videoSettings.quality === 'high' ? 'hd' : 'premium',
+            resolution: videoSettings.quality === 'high' ? '1080p' : '720p'
+          }
+        }
+      };
+
+      console.log('📤 D-ID API リクエスト:', {
+        text: requestBody.text,
+        textLength: requestBody.text.length,
+        voice: requestBody.options.voice,
+        quality: requestBody.options.config.quality
+      });
+
+      const didResponse = await fetch('/api/did-video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!didResponse.ok) {
+        const errorText = await didResponse.text();
+        console.error('❌ D-ID API エラー:', {
+          status: didResponse.status,
+          statusText: didResponse.statusText,
+          error: errorText
+        });
+        throw new Error(`D-ID API エラー ${didResponse.status}: ${errorText}`);
+      }
+
+      const didResult = await didResponse.json();
+      console.log('📊 D-ID API レスポンス:', {
+        success: didResult.success,
+        videoId: didResult.videoId,
+        videoUrl: didResult.videoUrl,
+        hasVideoUrl: !!didResult.videoUrl,
+        status: didResult.status,
+        duration: didResult.duration,
+        error: didResult.error
+      });
+      
+      if (!didResult.success) {
+        console.error('❌ D-ID 動画生成失敗:', didResult.error);
+        throw new Error(`D-ID 動画生成失敗: ${didResult.error}`);
+      }
+
+      // 動画URLの確認
+      if (!didResult.videoUrl) {
+        console.error('❌ 動画URLが取得できません:', {
+          success: didResult.success,
+          videoId: didResult.videoId,
+          status: didResult.status,
+          error: didResult.error,
+          hasVideoUrl: !!didResult.videoUrl,
+          fullResponse: didResult
+        });
+        throw new Error(`動画URLが取得できませんでした。ステータス: ${didResult.status}, エラー: ${didResult.error || '不明'}, videoUrl: ${didResult.videoUrl || 'undefined'}`);
+      }
+
+      console.log('✅ Step 1: D-ID 動画生成完了', {
+        videoId: didResult.videoId,
+        videoUrl: didResult.videoUrl,
+        duration: didResult.duration
+      });
+      setProgress(80);
+
+      // 生成されたデータを保存
+      const generatedData = {
+        video: {
+          videoId: didResult.videoId,
+          videoUrl: didResult.videoUrl,
+          duration: didResult.duration,
+          localFile: null as any
+        },
+        summary: summaryData.summary,
+        voiceType: voiceSettings.voice,
+        character: characterSettings.character,
+        background: characterSettings.background,
+        quality: videoSettings.quality,
+        timestamp: new Date().toISOString()
+      };
+
+      // Step 2: 動画ファイルをディスクに保存 (80-100%)
+      console.log('💾 Step 2: 動画ファイル保存開始');
+      setProgress(80);
+      
+      if (didResult.videoUrl) {
+        try {
+          console.log('📡 動画保存APIを呼び出し中...');
+          const videoSaveResponse = await fetch('/api/save-video', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              videoUrl: didResult.videoUrl,
+              summary: summaryData.summary,
+              character: characterSettings.character,
+              quality: videoSettings.quality,
+            }),
+          });
+
+          console.log('📥 動画保存APIレスポンス:', {
+            status: videoSaveResponse.status,
+            ok: videoSaveResponse.ok
+          });
+
+          if (videoSaveResponse.ok) {
+            const videoSaveResult = await videoSaveResponse.json();
+            console.log('📊 動画保存結果:', videoSaveResult);
+            
+            if (videoSaveResult.success) {
+              console.log('✅ Step 2: 動画ファイル保存完了', videoSaveResult.videoInfo);
+              generatedData.video.localFile = videoSaveResult.videoInfo;
+              setProgress(95);
+              
+              // 保存成功の詳細ログ
+              console.log('💾 保存されたファイル情報:', {
+                filename: videoSaveResult.videoInfo.filename,
+                filepath: videoSaveResult.videoInfo.filepath,
+                publicUrl: videoSaveResult.videoInfo.publicUrl,
+                size: `${(videoSaveResult.videoInfo.size / 1024).toFixed(2)} KB`
+              });
+            } else {
+              console.error('❌ 動画ファイル保存失敗:', videoSaveResult.error);
+              alert(`動画ファイルの保存に失敗しました: ${videoSaveResult.error}`);
+            }
+          } else {
+            const errorText = await videoSaveResponse.text();
+            console.error('❌ 動画ファイル保存API エラー:', {
+              status: videoSaveResponse.status,
+              error: errorText
+            });
+            alert(`動画ファイル保存API エラー: ${videoSaveResponse.status}`);
+          }
+        } catch (error) {
+          console.error('💥 動画ファイル保存エラー:', error);
+          alert(`動画ファイル保存エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+        }
+      } else {
+        console.warn('⚠️ 動画URLがありません');
+        alert('動画URLが取得できませんでした');
+      }
+
+      // Step 3: 最終処理 (80-100%)
+      console.log('🎯 Step 3: 最終処理開始');
+      for (let i = 80; i <= 100; i += 5) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setProgress(i);
+      }
+
+      console.log('🎉 動画生成完了');
+      setProgress(100);
+      
+      console.log('💾 生成データ:', generatedData);
+      console.log('🎬 生成された動画:', {
+        videoId: didResult.videoId,
+        videoUrl: didResult.videoUrl,
+        duration: didResult.duration,
+        localFile: generatedData.video.localFile,
+        text: summaryData.summary.substring(0, 100)
+      });
+      
+      // 保存成功の通知
+      if (generatedData.video.localFile) {
+        console.log('✅ 動画が正常に保存されました:', generatedData.video.localFile.publicUrl);
+      }
+      
+      // 完了表示のため少し待機
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // 成功メッセージを表示
+      if (generatedData.video.localFile) {
+        alert(`動画生成が完了しました！\nファイル: ${generatedData.video.localFile.filename}\n保存場所: public/generated-videos/\nテキスト: ${summaryData.summary.substring(0, 50)}...`);
+      } else {
+        alert('動画生成は完了しましたが、ファイルの保存に失敗しました。');
+      }
+      
+    } catch (error) {
+      console.error('💥 動画生成エラー:', error);
+      alert(`動画生成に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    } finally {
+      setIsGenerating(false);
+      router.push('/video-library');
     }
-    
-    setIsGenerating(false)
-    router.push('/video-library')
   }
 
   const renderStepContent = () => {
@@ -120,6 +370,21 @@ export default function VideoGenerationPage() {
       case 'summary':
         return (
           <div className="space-y-6">
+            {/* 元の記事テキストの表示 */}
+            {summaryData.originalText && (
+              <div className="space-y-2">
+                <Label>元の記事テキスト</Label>
+                <div className="p-4 bg-muted/50 rounded-lg max-h-60 overflow-y-auto">
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {summaryData.originalText}
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  元の記事テキスト（{summaryData.originalText.length}文字）
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="summary">AI生成要約</Label>
               <Textarea
@@ -130,7 +395,7 @@ export default function VideoGenerationPage() {
                 placeholder="AI要約がここに表示されます..."
               />
               <p className="text-sm text-muted-foreground">
-                要約を編集して、動画の内容を調整できます
+                要約を編集して、動画の内容を調整できます（{summaryData.summary.length}文字）
               </p>
             </div>
             
@@ -171,46 +436,22 @@ export default function VideoGenerationPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>話速: {voiceSettings.speed}x</Label>
-                <Slider
-                  value={[voiceSettings.speed]}
-                  onValueChange={(value) => setVoiceSettings(prev => ({ ...prev, speed: value[0] }))}
-                  max={2.0}
-                  min={0.5}
-                  step={0.1}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>音程: {voiceSettings.pitch}</Label>
-                <Slider
-                  value={[voiceSettings.pitch]}
-                  onValueChange={(value) => setVoiceSettings(prev => ({ ...prev, pitch: value[0] }))}
-                  max={2.0}
-                  min={0.5}
-                  step={0.1}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>音量: {voiceSettings.volume}</Label>
-                <Slider
-                  value={[voiceSettings.volume]}
-                  onValueChange={(value) => setVoiceSettings(prev => ({ ...prev, volume: value[0] }))}
-                  max={2.0}
-                  min={0.1}
-                  step={0.1}
-                />
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  💡 音声の詳細設定は動画生成時に自動的に最適化されます。
+                  選択した音声タイプに基づいて、Microsoft TTSが使用されます。
+                </p>
               </div>
             </div>
 
             <div className="flex justify-center">
-              <Button variant="outline" className="flex items-center space-x-2">
-                <Play className="h-4 w-4" />
-                <span>音声プレビュー</span>
-              </Button>
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  🎵 音声プレビューは動画生成時に自動的に生成されます。
+                  選択した音声タイプ: <strong>{voiceOptions.find(v => v.value === voiceSettings.voice)?.label}</strong>
+                </p>
+              </div>
             </div>
           </div>
         )
@@ -269,9 +510,9 @@ export default function VideoGenerationPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="vertical">縦型 (9:16) - TikTok/Instagram</SelectItem>
-                    <SelectItem value="square">正方形 (1:1) - Instagram</SelectItem>
-                    <SelectItem value="horizontal">横型 (16:9) - YouTube</SelectItem>
+                    <SelectItem value="vertical">縦型 (9:16) - TikTok/Instagram Reels</SelectItem>
+                    <SelectItem value="square">正方形 (1:1) - Instagram Posts</SelectItem>
+                    <SelectItem value="horizontal">横型 (16:9) - YouTube/YouTube Shorts</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -338,10 +579,10 @@ export default function VideoGenerationPage() {
                 </div>
 
                 <div className="space-y-2 text-sm text-muted-foreground">
-                  {progress < 30 && <p>AI要約を処理中...</p>}
-                  {progress >= 30 && progress < 60 && <p>音声を合成中...</p>}
-                  {progress >= 60 && progress < 90 && <p>動画を生成中...</p>}
-                  {progress >= 90 && <p>最終処理中...</p>}
+                  {progress < 80 && <p>🎬 D-ID APIで動画を生成中...</p>}
+                  {progress >= 80 && progress < 95 && <p>💾 動画ファイルを保存中...</p>}
+                  {progress >= 95 && progress < 100 && <p>🎯 最終処理中...</p>}
+                  {progress >= 100 && <p>✅ 生成完了！動画が generated-videos フォルダに保存されました</p>}
                 </div>
               </>
             ) : (
@@ -450,7 +691,7 @@ export default function VideoGenerationPage() {
               const Icon = currentStepData?.icon
               return (
                 <>
-                  <Icon className="h-5 w-5" />
+                  {Icon && <Icon className="h-5 w-5" />}
                   <span>{currentStepData?.title}</span>
                 </>
               )
