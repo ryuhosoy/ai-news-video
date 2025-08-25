@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +21,7 @@ import {
   Sparkles
 } from 'lucide-react'
 
-export default function VideoGenerationPage() {
+function VideoGenerationContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [currentStep, setCurrentStep] = useState('summary')
@@ -715,5 +715,13 @@ export default function VideoGenerationPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function VideoGenerationPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VideoGenerationContent />
+    </Suspense>
   )
 }

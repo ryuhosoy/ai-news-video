@@ -8,6 +8,10 @@ export interface DIDVideoOptions {
   voice?: {
     type: string;
     input: string;
+  };
+  config?: {
+    fluent?: boolean;
+    padAudio?: number;
     stitch?: boolean;
     resultFormat?: 'mp4' | 'webm';
     quality?: 'draft' | 'premium' | 'hd';
