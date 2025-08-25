@@ -8,15 +8,13 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+
+
 import { Progress } from "@/components/ui/progress"
 import { 
   Settings as SettingsIcon, 
   User, 
   Bell, 
-  Shield, 
-  Palette, 
   BarChart3,
   Key,
   Globe,
@@ -24,8 +22,7 @@ import {
   RefreshCw,
   TrendingUp,
   Eye,
-  Video,
-  Calendar
+  Video
 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -66,7 +63,7 @@ export default function SettingsPage() {
     weeklyViews: [1200, 1450, 1380, 1620, 1890, 2100, 1950]
   })
 
-  const handleSettingChange = (key, value) => {
+  const handleSettingChange = (key: string, value: string | boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

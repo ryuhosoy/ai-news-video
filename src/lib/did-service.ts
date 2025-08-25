@@ -7,11 +7,7 @@ export interface DIDVideoOptions {
   audioUrl?: string; // 音声ファイルのURL
   voice?: {
     type: string;
-    input: string;
-  };
-  config?: {
-    fluent?: boolean;
-    padAudio?: number;
+    input: string;es
     stitch?: boolean;
     resultFormat?: 'mp4' | 'webm';
     quality?: 'draft' | 'premium' | 'hd';
@@ -54,7 +50,7 @@ const DID_API_BASE_URL = 'https://api.d-id.com';
 /**
  * D-ID APIにリクエストを送信
  */
-async function didApiRequest(endpoint: string, method: string = 'GET', body?: any) {
+async function didApiRequest(endpoint: string, method: string = 'GET', body?: Record<string, unknown>) {
   const apiKey = getDIDApiKey();
   
   if (!apiKey) {
@@ -146,7 +142,7 @@ export async function createDIDVideo(
     const mergedOptions = { ...defaultOptions, ...options };
 
     // 動画生成リクエストを作成
-    const requestBody: any = {
+    const requestBody: Record<string, unknown> = {
       script: {
         type: options.audioUrl ? 'audio' : 'text',
         input: text,

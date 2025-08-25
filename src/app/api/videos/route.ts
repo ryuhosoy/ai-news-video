@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
 
@@ -15,7 +15,7 @@ export interface VideoInfo {
   size: number;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const videosDir = join(process.cwd(), 'public', 'generated-videos');
     
@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
         // ファイル名から情報を抽出
         const filenameParts = file.replace('.mp4', '').split('-');
         const summary = filenameParts[0] || '動画';
-        const character = filenameParts[1] || 'unknown';
         const quality = filenameParts[2] || 'standard';
         
         const video: VideoInfo = {

@@ -3,28 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
+
 import { 
   FileText, 
   Mic, 
   User, 
   Video, 
-  Settings,
-  Play,
-  Download,
-  Share,
   CheckCircle,
-  Clock,
-  Sparkles,
-  Loader2
+  Sparkles
 } from 'lucide-react'
 
 export default function VideoGenerationPage() {
@@ -250,7 +244,7 @@ export default function VideoGenerationPage() {
           videoId: didResult.videoId,
           videoUrl: didResult.videoUrl,
           duration: didResult.duration,
-          localFile: null as any
+          localFile: null as { filename: string; filepath: string; publicUrl: string; size: number } | null
         },
         summary: summaryData.summary,
         voiceType: voiceSettings.voice,
