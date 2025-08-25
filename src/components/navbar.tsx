@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext"
 import { 
   Home, 
   FileText, 
@@ -12,7 +13,9 @@ import {
   Settings, 
   Moon, 
   Sun,
-  Sparkles
+  Sparkles,
+  LogOut,
+  User
 } from "lucide-react"
 
 const navItems = [
@@ -26,6 +29,7 @@ const navItems = [
 export function Navbar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { user, signOut } = useAuth()
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -62,17 +66,44 @@ export function Navbar() {
             })}
           </div>
 
-          {/* Dark Mode Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="p-2"
-          >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">テーマを切り替え</span>
-          </Button>
+          {/* User Menu */}
+          <div className="flex items-center space-x-2">
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 text-sm">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{user.email}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={signOut}
+                  className="flex items-center space-x-1"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">ログアウト</span>
+                </Button>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button variant="default" size="sm">
+                  ログイン
+                </Button>
+              </Link>
+            )}
+            
+            {/* Dark Mode Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2"
+            >
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">テーマを切り替え</span>
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}

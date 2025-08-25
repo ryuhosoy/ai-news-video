@@ -20,6 +20,7 @@ import {
   CheckCircle,
   Sparkles
 } from 'lucide-react'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 function VideoGenerationContent() {
   const router = useRouter()
@@ -720,8 +721,10 @@ function VideoGenerationContent() {
 
 export default function VideoGenerationPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <VideoGenerationContent />
-    </Suspense>
+    <ProtectedRoute>
+      <Suspense fallback={<div>Loading...</div>}>
+        <VideoGenerationContent />
+      </Suspense>
+    </ProtectedRoute>
   )
 }

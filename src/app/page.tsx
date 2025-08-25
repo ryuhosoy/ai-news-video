@@ -1,7 +1,10 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/contexts/AuthContext"
 import { 
   Video, 
   FileText, 
@@ -10,59 +13,122 @@ import {
   Play,
   Plus,
   BarChart3,
-  Eye
+  Eye,
+  LogIn
 } from "lucide-react"
 
-// Server Component - データ取得をサーバーサイドで実行
-async function getStats() {
-  // 実際のアプリケーションでは、ここでデータベースやAPIからデータを取得
-  return {
-    totalVideos: 24,
-    totalViews: 15420,
-    totalEngagement: 89,
-    processingVideos: 2
+// モックデータ
+const stats = {
+  totalVideos: 24,
+  totalViews: 15420,
+  totalEngagement: 89,
+  processingVideos: 2
+}
+
+const recentVideos = [
+  {
+    id: 1,
+    title: "AI技術の最新動向について",
+    thumbnail: "/api/placeholder/160/90",
+    views: 1250,
+    engagement: 92,
+    createdAt: "2時間前",
+    status: "published"
+  },
+  {
+    id: 2,
+    title: "経済ニュース：株価上昇の背景",
+    thumbnail: "/api/placeholder/160/90",
+    views: 890,
+    engagement: 87,
+    createdAt: "5時間前",
+    status: "published"
+  },
+  {
+    id: 3,
+    title: "スポーツ：サッカー日本代表の活躍",
+    thumbnail: "/api/placeholder/160/90",
+    views: 0,
+    engagement: 0,
+    createdAt: "処理中",
+    status: "processing"
   }
-}
+]
 
-async function getRecentVideos() {
-  // 実際のアプリケーションでは、ここでデータベースやAPIからデータを取得
-  return [
-    {
-      id: 1,
-      title: "AI技術の最新動向について",
-      thumbnail: "/api/placeholder/160/90",
-      views: 1250,
-      engagement: 92,
-      createdAt: "2時間前",
-      status: "published"
-    },
-    {
-      id: 2,
-      title: "経済ニュース：株価上昇の背景",
-      thumbnail: "/api/placeholder/160/90",
-      views: 890,
-      engagement: 87,
-      createdAt: "5時間前",
-      status: "published"
-    },
-    {
-      id: 3,
-      title: "スポーツ：サッカー日本代表の活躍",
-      thumbnail: "/api/placeholder/160/90",
-      views: 0,
-      engagement: 0,
-      createdAt: "処理中",
-      status: "processing"
-    }
-  ]
-}
+export default function Dashboard() {
+  const { user, loading } = useAuth()
 
-export default async function Dashboard() {
-  // Server Componentでデータを並行取得
-  const [stats, recentVideos] = await Promise.all([
-    getStats(),
-    getRecentVideos()
-  ])
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">読み込み中...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="space-y-8">
+        {/* Welcome Header */}
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold text-foreground">AI動画生成アプリへようこそ</h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            AI要約×ショート動画生成で、ニュース記事を魅力的な動画コンテンツに変換しましょう
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Link href="/login">
+              <Button size="lg" className="flex items-center space-x-2">
+                <LogIn className="h-5 w-5" />
+                <span>ログイン</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5" />
+                <span>AI要約</span>
+              </CardTitle>
+              <CardDescription>
+                ニュース記事をAIが自動で要約し、重要なポイントを抽出
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Video className="h-5 w-5" />
+                <span>動画生成</span>
+              </CardTitle>
+              <CardDescription>
+                AIキャラクターと音声合成で魅力的な動画を自動生成
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5" />
+                <span>簡単共有</span>
+              </CardTitle>
+              <CardDescription>
+                生成された動画をSNSに簡単にアップロード
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
